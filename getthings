@@ -1,0 +1,49 @@
+/*
+ * Module code goes here. Use 'module.exports' to export things:
+ * module.exports.thing = 'a thing';
+ *
+ * You can import it from another modules like this:
+ * var mod = require('getthings');
+ * mod.thing == 'a thing'; // true
+ */
+
+module.exports = {
+run:function(canenergy,geted){
+    for(var name in Game.rooms){
+        canenergy[name]={all:0,free:0,used:0,forspawn:0,forspawnnow:0}
+    }
+    for(var name in Game.structures){
+        if(Game.structures[name].store){
+        canenergy[Game.structures[name].pos.roomName].all+=Game.structures[name].store.getCapacity(RESOURCE_ENERGY)
+        canenergy[Game.structures[name].pos.roomName].free+=Game.structures[name].store.getFreeCapacity(RESOURCE_ENERGY)
+        canenergy[Game.structures[name].pos.roomName].used+=Game.structures[name].store.getUsedCapacity(RESOURCE_ENERGY)
+        canenergy[Game.structures[name].pos.roomName].forspawn+=((Game.structures[name].structureType===STRUCTURE_EXTENSION||
+        Game.structures[name].structureType===
+        STRUCTURE_SPAWN)? Game.structures[name].store.getCapacity(RESOURCE_ENERGY):0)
+        canenergy[Game.structures[name].pos.roomName].forspawnnow+=((Game.structures[name].structureType===STRUCTURE_EXTENSION||
+        Game.structures[name].structureType===
+        STRUCTURE_SPAWN)? Game.structures[name].store.getUsedCapacity(RESOURCE_ENERGY):0)
+        }
+        var strs = Game.structures[name].room.find(FIND_STRUCTURES,strt=>{
+            return strt.my||strt.structureType==STRUCTURE_ROAD
+        })
+        strs.forEach(s=>{
+            if(s.hits/s.hitsMax<0.4){
+            geted.builds.push(s)
+            }
+        })
+        var lastharm=0
+        var enemy = Game.structures[name].pos.findInRange(FIND_HOSTILE_CREEPS,30,{filter:enemy=>{
+            if(Memory.white_list.player[enemy.owner])return false
+            var harm = 0
+            enemy.body.forEach(bt=>{
+                harm+=(bt.type==ATTACK||bt.type==RANGED_ATTACK)
+                harm+=(bt.type==HEAL||bt.type==CLAIM)*4
+            })
+            if(harm>lastharm){lastharm=harm;return true}else{return false}
+        }})
+        geted.enemys.push(enemy)
+    }
+    geted.builds.forEach(b=>{new RoomVisual(b.pos.roomName).text('!',b.pos)})
+}
+};
