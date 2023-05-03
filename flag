@@ -1,0 +1,42 @@
+var findp = require('findp')
+module.exports = {
+    run:function(){
+        var flagamount = {}
+        for(var name in Game.flags){
+            switch(Game.flags[name].color){
+                case COLOR_RED:{
+                    flagamount.dis++
+                    break
+                }
+                case COLOR_ORANGE:{
+                    new RoomVisual(Game.flags[name].pos.roomName).rect(Game.flags[name].pos.x-3.5,Game.flags[name].pos.y-3.5,7,7,{strokeWidth:0.1,
+                    opacity:0.2,stroke:'#ffa664',fill:'#56566620'}).poly([
+                        [Game.flags[name].pos.x+3.5,Game.flags[name].pos.y+3.5],
+                        [Game.flags[name].pos.x-3.5,Game.flags[name].pos.y+3.5],
+                        [Game.flags[name].pos.x-3.5,Game.flags[name].pos.y-3.5],
+                        [Game.flags[name].pos.x+3.5,Game.flags[name].pos.y-3.5],
+                        [Game.flags[name].pos.x+3.5,Game.flags[name].pos.y+3.5]
+                        ],{stroke:'#FFD27E',strokeWidth:0.1,opacity:0.2,lineStyle:'dashed'})
+                    break
+                }
+                case COLOR_BROWN:{
+                     new RoomVisual(Game.flags[name].pos.roomName).rect(Game.flags[name].pos.x-0.5,Game.flags[name].pos.y-0.5,1,1,{strokeWidth:0.1,
+                    opacity:1,stroke:'#ffffee',fill:'#00000000'})
+                    break
+                }
+            }
+        }
+        return flagamount
+    },
+    way:function(){for(var name in Game.spawns){
+    Game.spawns[name].room.find(FIND_FLAGS).forEach(flag=>
+    {
+        if(flag.name==='way'){
+        var way=findp.find(Game.spawns[name].pos,flag.pos,0,0,false,false)
+        way.path.forEach(place=>{place.createConstructionSite(STRUCTURE_ROAD)})
+        flag.remove()
+        }
+    })
+    }
+    }
+};
