@@ -1,0 +1,46 @@
+var findp = require('findp')
+module.exports = {
+run:function(creep,creeps){
+    if(creep.store.getUsedCapacity(RESOURCE_ENERGY)==0){creep.memory.doing=false;return}
+        if(creep.memory.go===undefined||creep.memory.go===false){
+         var b = []
+        for(var name in Game.structures){
+            if(Game.structures[name].store){
+            if(Game.structures[name].store.getFreeCapacity(RESOURCE_ENERGY) != 0){
+            if((creeps.all>10&&creeps['mover']>=1)||Game.structures[name].structureType==STRUCTURE_SPAWN||Game.structures[name].structureType==STRUCTURE_EXTENSION){
+            b.push(Game.structures[name])
+            }
+            }
+        }}
+        if(!b[0]){creep.memory.doing=false;return}
+        var g = {}
+        var lastcost = 3000
+        b.forEach((str)=>{
+         var ge = findp.find(creep.pos,{pos:str.pos,range:1},0,0,false)
+         if(ge.cost<lastcost&&!ge.incomplete){lastcost = ge.cost;g=ge;g.building=str}
+    })
+        if(g.building!==undefined){
+            creep.memory.way=g.path
+            creep.memory.go=g.building.id
+            creep.memory.wait=0
+        }
+    }else{
+        if((Game.getObjectById(creep.memory.go)? (!(creep.pos.inRangeTo(Game.getObjectById(creep.memory.go).pos,2))):false)&&creep.memory.wait<3){
+            var g = {path:creep.memory.way}
+            // g.path=g.path.map(pos=>{
+            //     return new RoomPosition(pos.x,pos.y,pos.roomName)
+            // })
+        }else if(!(creep.pos.inRangeTo(Game.getObjectById(creep.memory.go).pos,1))){
+        var g = findp.find(creep.pos,{pos:Game.getObjectById(creep.memory.go).pos,range:1})
+        }else{var g={}}
+        g.building=Game.getObjectById(creep.memory.go)
+        if(g.building.store)if(g.building.store.getFreeCapacity(RESOURCE_ENERGY) == 0){
+                creep.memory.go=false
+            }
+    }
+    findp.moveby(creep,g.path,{lineStyle:'dashed',stroke:'#ffff00'})
+        if(creep.transfer(g.building,RESOURCE_ENERGY)==0){
+            creep.memory.go=false
+        }
+}
+};
