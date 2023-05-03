@@ -1,0 +1,92 @@
+module.exports = {
+    find:function(from,to,plain,swamp,uncreep,unconstruction_road,maxcost,attackr){
+    plain=plain||2
+    swamp=swamp||10
+    maxcost=maxcost||3000
+    return PathFinder.search(
+        from,to,{
+            maxCost:maxcost,
+            plainCost:plain,
+            swampCost:swamp,
+            roomCallback:function(rm){
+                var r = Game.rooms[rm]
+                if(!r)return
+                var costs = new PathFinder.CostMatrix
+                r.find(FIND_STRUCTURES).forEach((st)=>{
+                    if (st.structureType === STRUCTURE_ROAD) {
+            // 相对于平原，寻路时将更倾向于道路
+            costs.set(st.pos.x, st.pos.y, 1);
+          } else if (st.structureType !== STRUCTURE_CONTAINER &&
+                     (st.structureType !== STRUCTURE_RAMPART ||
+                      !st.my)) {
+            // 不能穿过无法行走的建筑
+            costs.set(st.pos.x, st.pos.y, 0xff);
+          }
+                })
+                r.find(FIND_MY_CONSTRUCTION_SITES).forEach((st)=>{
+                if(unconstruction_road===false&&st.structureType === STRUCTURE_ROAD){
+                    // 相对于平原，寻路时将更倾向于道路
+            costs.set(st.pos.x, st.pos.y, 1);
+                }else if (st.structureType !== STRUCTURE_CONTAINER && st.structureType !== STRUCTURE_ROAD&&
+                     (st.structureType !== STRUCTURE_RAMPART ||
+                      !st.my)) {
+            // 不能穿过无法行走的建筑
+            costs.set(st.pos.x, st.pos.y, 0xff);
+          }
+                })
+                if(!(uncreep===false)){r.find(FIND_CREEPS).forEach((creep)=>{
+          costs.set(creep.pos.x, creep.pos.y, 0xff);
+        })}
+        if(attackr){
+            r.find(FIND_HOSTILE_CREEPS).forEach(creep=>{
+                if(creep.getActiveBodyparts(ATTACK)>attackr){
+                    ([1,0,-1]).forEach(x=>{
+                        ([1,0,-1]),forEach(y=>{
+                            costs.set(creep.pos.x+x,creep.pos.y+y,0xff)
+                        })
+                    })
+                }
+            })
+        }
+        return costs
+                }
+        })
+},
+moveby:function(creep,path,style,turn){
+    var re
+    if(path){
+    if(path.length>0){
+        var init = -1
+        if(!path.slice(0,Math.min(3,path.length)).every(a=>{
+            init++
+            return a.x!==creep.pos.x||a.y!==creep.pos.y||a.roomName!==creep.pos.roomName
+        })){
+        path.splice(0,init+1)
+        creep.memory.wait=0
+        }
+        creep.memory.way=path
+        if(turn!==false){
+            var patha=path.slice(0,Math.min(3,path.length)).map(pos=>{
+        return new RoomPosition(pos.x,pos.y,pos.roomName)
+    })
+        }else{
+            var patha=path
+        }
+        creep.moveByPath(patha)
+        var visuals={}
+        path.forEach(p=>{
+            if(!visuals[p.roomName]){
+                visuals[p.roomName]=[]
+            }
+            visuals[p.roomName].push(p)
+        })
+        for(var name in visuals){
+        new RoomVisual(name).poly(visuals[name],style).circle(visuals[name][visuals[name].length-1],{radius:0.2,fill:'#00000000',stroke:'#ffffff'}).
+        circle(visuals[name][0],{radius:0.2,fill:'#00000000',stroke:'#000000'})
+        }
+    }}
+    if(creep.fatigue==0){
+        creep.memory.wait++
+    }
+}
+}
