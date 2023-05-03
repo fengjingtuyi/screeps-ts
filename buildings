@@ -1,0 +1,34 @@
+var findp = require('findp')
+module.exports = function(){
+    for(var name in Game.structures){
+        var str = Game.structures[name]
+        if(str.structureType === STRUCTURE_TOWER){//run tower
+        var lastharm=0
+        var enemy = str.pos.findInRange(FIND_HOSTILE_CREEPS,20,{filter:enemy=>{
+            var harm = 0
+            if(Memory.white_list.player.indexOf(enemy.owner)!=-1)return
+            enemy.body.forEach(bt=>{
+                harm+=(bt.type==CARRY||bt.type==WORK)/2
+                harm+=(bt.type==ATTACK||bt.type==RANGED_ATTACK)
+                harm+=(bt.type==HEAL||bt.type==CLAIM)*4
+            })
+            harm/=enemy.body.length
+            if(harm>lastharm){lastharm=harm;return true}else{return false}
+        }})
+        if(str.attack(enemy[enemy.length-1])==-7){
+            var dcreep = str.room.find(FIND_MY_CREEPS,{filter:creep=>{return creep.hitsMax>creep.hits}})
+            str.heal(dcreep[0])
+        }
+        var strs = str.room.find(FIND_STRUCTURES,{filter:strt=>{
+            return (strt.my||strt.structureType==STRUCTURE_ROAD||strt.structureType==STRUCTURE_WALL||strt.structureType==STRUCTURE_CONTAINER)&&strt.hits!=undefined
+        }})
+        var s = strs.reduce((a,b)=>{if(a.hits/Math.min(a.hitsMax,100000)>b.hits/Math.min(b.hitsMax,100000)){return b}else{return a}})
+        if(s.hitsMax-s.hits==0){
+            s = strs.reduce((a,b)=>{if(a.hits/a.hitsMax>b.hits/b.hitsMax){return b}else{return a}})
+        }
+            if((s.hitsMax-s.hits!=0)&&(s.hits/s.hitsMax<0.4||str.store.getFreeCapacity(RESOURCE_ENERGY)<100)){
+            str.repair(s)
+        }
+    }
+}
+}
