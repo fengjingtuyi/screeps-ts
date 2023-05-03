@@ -1,0 +1,15 @@
+module.exports = {
+run:function(){
+    if(Game.cpu.bucket == 10000){
+        Game.cpu.generatePixel()
+        console.log('pixel')
+    }
+    for(var name in Game.rooms){
+    if(Game.rooms[name].controller){
+    new RoomVisual().text('目前cpu存量：'+Game.cpu.bucket,Game.rooms[name].controller.pos).
+    text('当前tick可用：'+Game.cpu.tickLimit,(()=>{var a = Game.rooms[name].controller.pos;a.y-=1;return a})()).
+    text('当前tick用：'+Game.cpu.getUsed(),(()=>{var a = Game.rooms[name].controller.pos;a.y-=1;return a})())
+    break
+    }}
+}
+};
