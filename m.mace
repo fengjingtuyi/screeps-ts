@@ -1,0 +1,149 @@
+var findp = require('findp')
+global.mace={
+    mode:function(name,m){
+        if(m==null)return '战锤（直译其实是权杖）模式控制器\n0：停止\n1：最近的标记敌人\n2：攻击最近敌人\n3：移动到标记点\n翻译的人你写的都错位了啊'
+        var b = []
+        if(name.isArray){
+            if(Game.creeps[name]){
+                b.push(Game.creeps[name])
+            }
+        }else{
+            for(var c in name){
+                if(Game.creeps[c]){
+                    b.push(Game.creeps[c])
+                }
+            }
+        }
+        if(b[0]==null){
+            for(var name in Game.creeps){
+                if(Game.creeps[name].memory.type=='mace'){
+                    if(Game.creeps[name]){
+                        b.push(Game.creeps[name])
+                    }
+                }
+            }
+        }
+        b.forEach(creep=>{
+            creep.memory.mode=m
+            creep.memory.way=null
+            console.log(creep.name+'mode'+creep.memory.mode)
+        })
+        return b
+    },
+    flag:function(){
+        for(var name in Game.flags){
+            var last = name.lastIndexOf('mace')
+            if(last>=0){
+                Game.flags[name].remove()
+            }
+        }
+    }
+}
+module.exports = function(creep){
+    switch(creep.memory.mode){
+        case 1:{
+            creep.memory.flag=null
+            creep.memory.f=null
+            if(!Game.getObjectById(creep.memory.enemy)&&Memory.enemy[creep.memory.enemy]!=true){
+                var e = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS,{filter:c=>{
+                    return Memory.enemy[c.id]
+                }})
+                if(e==null){
+                    e = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES,{filter:s=>{
+                    return Memory.enemy[s.id]
+                }})
+                }
+                if(e){
+                creep.memory.enemy = e.id}
+            }
+            break
+        }
+        case 2:{
+            creep.memory.flag=null
+            creep.memory.f=null
+            if(!Game.getObjectById(creep.memory.enemy)){
+                var e=creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS,{filter:c=>{
+                    return !Memory.white_list[c.owner]
+                }})
+                if(e==null){
+                    e=creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES,{filter:s=>{
+                    return !Memory.white_list[s.owner]
+                }})
+                }
+                if(e){
+                creep.memory.enemy = e.id}
+            }
+            break
+        }
+        case 3:{
+            creep.memory.enemy=null
+            if(!Game.flags[creep.memory.flag]||creep.memory.done==true){
+                creep.memory.done=false
+                creep.memory.way=null
+                var f = []
+                for(var name in Game.flags){
+                    var last = name.lastIndexOf('mace')
+                    if(last>=0){
+                        f.push({flag:name,a:name.substring(last+4,name.length)})
+                    }
+                }
+                f=f.sort((a,b)=>{
+                    var aa=parseInt(a.a)
+                    var ba=parseInt(b.a)
+                    if(isNaN(ba)){
+                        return -1
+                    }else if(isNaN(aa)){
+                        return 1
+                    }else{
+                        return aa-ba
+                    }
+                })
+                if(!f[0])break
+                if(creep.memory.flag==null){
+                    creep.memory.flag=f[0].flag
+                    creep.memory.f=f[0].a
+                    break
+                }
+                var g = f.reduceRight((a,b)=>{
+                    if(b.a>=creep.memory.f+creep.memory.done&&a!=null){
+                        return b
+                    }else{
+                        return a
+                    }
+                })
+                creep.memory.flag=g.flag
+                creep.memory.f=g.a
+            }
+            break
+        }
+        default:{
+            creep.memory.way=null
+            creep.memory.enemy=null
+            creep.memory.flag=null
+            creep.memory.f=null
+            return
+        }
+    }
+    if(creep.memory.enemy){
+        var enemy=Game.getObjectById(creep.memory.enemy)
+        if(enemy){
+        if(!creep.pos.inRangeTo(enemy.pos,1)){
+        if(creep.memory.way==null||Game.time%2==0){
+        creep.memory.way=findp.find(creep.pos,{pos:enemy.pos,range:1},0,0,true,true,0,true).path
+        }}else{
+        creep.attack(enemy)
+        }}
+    }else if(creep.memory.flag){
+        var flag =Game.flags[creep.memory.flag]
+        if(flag){if(creep.memory.way==null||Game.time%10==0){
+        creep.memory.way=findp.find(creep.pos,{pos:flag.pos,range:0},0,0,true,true,0,true).path
+        }
+        if(creep.pos.inRangeTo(flag.pos,0)){
+            creep.memory.done=true
+        }}
+    }
+    if(creep.hits/creep.hitsMax<0.5)creep.heal(creep)
+    if(creep.memory.way){
+        findp.moveby(creep,creep.memory.way,{stroke:'#ff0000'})
+    }
+}
