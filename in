@@ -1,0 +1,41 @@
+global.c={
+    c:function(t,room,cname,body){
+        t=t||'player'
+        if(Game.rooms[room]){
+        var spawnss = Game.rooms[room].find(FIND_MY_SPAWNS)}else{var spawnss=[]}
+        if(!spawnss[0]){
+            for(var name in Game.spawns){
+                spawnss[0]=Game.spawns[name]
+                break
+            }
+        }
+        return (spawnss[0].spawnCreep(body,cname,{memory:{work:t,from:spawnss[0].name}}))
+},
+    s:function(name,text){
+        if(!Game.creeps[name]){
+            for(var name in Game.creeps){
+                Game.creeps[name].say(text,true)
+            }
+            return 'All creeps say:'+text
+        }else{
+            Game.creeps[name].say(text,true)
+            return name+'say:'+text
+        }
+    },
+    g:{
+        valueOf:(function(){
+            for(var name in Game.creeps){
+                if(Game.creeps[name].memory.work=='player')return name
+            }
+            return 'none'
+            })
+    },
+    do:function(todo){
+        for(var name in Game.creeps){
+                if(Game.creeps[name].memory.work=='player'){
+                    Game.creeps[name].room.lookAtArea(Game.creeps[name].pos.y-1,Game.creeps[name].pos.x-1,
+                    Game.creeps[name].pos.y+1,Game.creeps[name].pos.x+1,true).forEach(str=>todo(Game.creeps[name],str[str.type]))
+                }
+        }
+    }
+}
