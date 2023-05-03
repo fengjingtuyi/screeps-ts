@@ -1,0 +1,42 @@
+var flagdo = require('flag')
+var runbuilding = require('buildings')
+var tospawn = require('spawn')
+var thecpu = require('cpu')
+var rememory = require('rememory')
+var getthings = require('getthings')
+var role = require('role')
+var thereport = require('report')
+require('in')
+module.exports.loop = function () {
+    var canenergy = {}
+    var geted = {}
+    geted.builds = [],geted.enemys=[]
+    getthings.run(canenergy,geted)
+    var flagamount=flagdo.run()
+    flagdo.way()
+    runbuilding()
+    rememory()
+    var creepamount = {}
+    for(var name in Game.spawns){
+    creepamount[name]={}
+    creepamount.all=creepamount[name].all=creepamount[name]['build']=creepamount[name]['up']=creepamount[name]['spawn']=creepamount[name]['worker']=
+    creepamount[name]['mover']=creepamount[name]['tmover']=creepamount[name]['tuper']=creepamount[name]['tbuilder']=creepamount[name]['miner']=
+    creepamount[name]['autoa']=0
+    }
+    for(var name in Game.creeps){
+        if(creepamount[Game.creeps[name].memory.from]){
+        if(!creepamount[Game.creeps[name].memory.from][Game.creeps[name].memory.work]){creepamount[Game.creeps[name].memory.work]=1}
+        if(!creepamount[Game.creeps[name].memory.from][Game.creeps[name].memory.doing]){creepamount[Game.creeps[name].memory.doing]=1}
+        creepamount[Game.creeps[name].memory.from].all += 1
+        creepamount.all+=1
+        creepamount[Game.creeps[name].memory.from][Game.creeps[name].memory.work] += 1
+        creepamount[Game.creeps[name].memory.from][Game.creeps[name].memory.doing] += 1
+        }
+    }
+    tospawn(creepamount,canenergy)
+    role.run(creepamount,flagamount,canenergy)
+    if(Game.time%1500==0){//report
+   thereport(creepamount)
+    }
+    thecpu.run()
+}
